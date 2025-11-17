@@ -14,6 +14,8 @@ from sklearn.metrics import r2_score
 from sklearn.ensemble import RandomForestClassifier,GradientBoostingClassifier,AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
+import mlflow
+
 
 
 
@@ -27,6 +29,18 @@ class ModelTrainer:
         except Exception as e:
             raise CustomException(e,sys)
     
+    def track_mlflow(self,best_model,classificationmetrics):
+
+        with mlflow.start_run():
+            f1_score=classificationmetrics.f1_score
+            precision_score=classificationmetrics.precision_score
+            recall_score=classificationmetrics.recall_score
+
+            mlflow.log_metric("f1_score",f1_score)
+            mlflow.log_metric("precision_score",precision_score)
+            mlflow.log_metric("recall_score",recall_score)
+            mlflow.sklearn.log_model(best_model,"model")
+
 
     def train_model(self,x_train,x_test,y_train,y_test)->ModelTrainerArtifacts:
 
@@ -82,6 +96,8 @@ class ModelTrainer:
 
             classification_train_metrics=get_classification_metrics(y_true=y_train,y_pred=y_train_pred)
 
+            self.track_mlflow(best_model,classification_train_metrics)
+
             y_test_pred=best_model.predict(x_test)
 
             classification_test_metrics=get_classification_metrics(y_true=y_test,y_pred=y_test_pred)
@@ -95,6 +111,8 @@ class ModelTrainer:
             network_model=NetworkModel(preprocessor=preprocessor,model=best_model)
 
             save_object(self.model_trainerconfig.trained_model_file_path,obj=network_model)
+
+            save_object('final_model/model.pkl',best_model)
 
             model_trainer_artifacts=ModelTrainerArtifacts(trained_model_file_path=self.model_trainerconfig.trained_model_file_path,
                                   train_metrics_artifacts=classification_train_metrics,test_metrics_artifacts=classification_test_metrics)

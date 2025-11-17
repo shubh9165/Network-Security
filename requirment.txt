@@ -6,4 +6,6 @@ pymongo[srv]==3.11
 dotenv
 scikit-learn
 PyYAML
+mlflow
+dagshub
 ##-e .
